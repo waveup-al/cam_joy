@@ -1,0 +1,5 @@
+{
+  "name": "AutoCamp - Amazon Ads Bulk Processor",
+  "description": "An AppSheet-like system to automatically analyze and manage Amazon advertising bulk files based on custom rules.",
+  "requestFramePermissions": []
+}
