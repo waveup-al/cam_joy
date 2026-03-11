@@ -9,6 +9,7 @@ import { Sidebar } from "./components/Sidebar";
 import { Dashboard } from "./components/Dashboard";
 import { RuleEngine } from "./components/RuleEngine";
 import { FileProcessor } from "./components/FileProcessor";
+import { SearchTermProcessor } from "./components/SearchTermProcessor";
 
 export default function App() {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -22,6 +23,7 @@ export default function App() {
           {activeTab === "dashboard" && <Dashboard />}
           {activeTab === "rules" && <RuleEngine />}
           {activeTab === "processor" && <FileProcessor />}
+          {activeTab === "search-term" && <SearchTermProcessor />}
           {activeTab === "history" && (
             <div className="p-8 flex items-center justify-center h-full text-slate-400">
               <div className="text-center">

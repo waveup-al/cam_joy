@@ -4,6 +4,7 @@ import {
   FileSpreadsheet,
   Settings2,
   History,
+  SearchCheck,
 } from "lucide-react";
 import { cn } from "../lib/utils";
 
@@ -20,6 +21,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
     { id: "rules", label: "Rule Engine", icon: Settings2 },
     { id: "processor", label: "File Processor", icon: FileSpreadsheet },
+    { id: "search-term", label: "Search Term", icon: SearchCheck },
     { id: "history", label: "History", icon: History },
   ];
 

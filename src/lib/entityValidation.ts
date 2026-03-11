@@ -49,26 +49,34 @@ export function validateActionValue(
     };
 }
 
-/**
- * Compute the new value for an action based on the current value.
- */
 export function computeActionValue(
     currentValue: number,
     action: RuleAction,
 ): number {
-    if (action.value === undefined) return currentValue;
+    if (action.value === undefined && action.type !== "tiered_increase") return currentValue;
 
     switch (action.type) {
         case "increase":
             return action.unit === "%"
-                ? currentValue * (1 + action.value / 100)
-                : currentValue + action.value;
+                ? currentValue * (1 + action.value! / 100)
+                : currentValue + action.value!;
         case "decrease":
             return action.unit === "%"
-                ? currentValue * (1 - action.value / 100)
-                : currentValue - action.value;
+                ? currentValue * (1 - action.value! / 100)
+                : currentValue - action.value!;
         case "set":
-            return action.value;
+            return action.value!;
+        case "tiered_increase": {
+            // Tìm tier phù hợp với budget hiện tại (sắp xếp từ nhỏ đến lớn)
+            const tiers = action.tiers || [
+                { maxBudget: 30, increasePercent: 50 },
+                { maxBudget: 999999, increasePercent: 30 },
+            ];
+            const sortedTiers = [...tiers].sort((a, b) => a.maxBudget - b.maxBudget);
+            const matchedTier = sortedTiers.find(t => currentValue <= t.maxBudget);
+            const percent = matchedTier?.increasePercent ?? 30;
+            return currentValue * (1 + percent / 100);
+        }
         default:
             return currentValue;
     }

@@ -223,6 +223,11 @@ export const RuleEngine: React.FC = () => {
             <option value="30d Spend">30d Spend ($)</option>
             <option value="30d Sales">30d Sales ($)</option>
           </optgroup>
+          <optgroup label="📊 Derived Metrics">
+            <option value="Spend % of Budget">Spend % of Budget</option>
+            <option value="Spend % of Budget (7d)">Spend % of Budget (7d)</option>
+            <option value="Avg Daily Spend">Avg Daily Spend ($)</option>
+          </optgroup>
           {entityFilterFields.length > 0 && (
             <optgroup label="🔍 Entity Filters">
               {entityFilterFields.map(f => (
@@ -532,6 +537,68 @@ export const RuleEngine: React.FC = () => {
                                       <span className="text-sm font-medium text-emerald-700 px-2">pts</span>
                                     )}
                                   </div>
+                                </div>
+                              )}
+
+                              {/* Tiered Increase Config */}
+                              {draftRule.action.type === "tiered_increase" && (
+                                <div>
+                                  <label className="text-xs font-medium text-slate-500 mb-2 block">Cấu hình tầng tăng budget</label>
+                                  <div className="space-y-2">
+                                    {(draftRule.action.tiers || [{ maxBudget: 30, increasePercent: 50 }, { maxBudget: 999999, increasePercent: 30 }]).map((tier, i) => (
+                                      <div key={i} className="flex items-center gap-2 text-sm">
+                                        <span className="text-slate-500 text-xs w-16">≤ $</span>
+                                        <input
+                                          type="number"
+                                          value={tier.maxBudget === 999999 ? "" : tier.maxBudget}
+                                          placeholder="Max budget"
+                                          onChange={(e) => {
+                                            const tiers = [...(draftRule.action.tiers || [{ maxBudget: 30, increasePercent: 50 }, { maxBudget: 999999, increasePercent: 30 }])];
+                                            tiers[i] = { ...tiers[i], maxBudget: parseInt(e.target.value) || 999999 };
+                                            setDraftRule({ ...draftRule, action: { ...draftRule.action, tiers } });
+                                          }}
+                                          className="w-20 bg-white border border-emerald-200 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-emerald-500 outline-none"
+                                        />
+                                        <span className="text-slate-500 text-xs">→ tăng</span>
+                                        <input
+                                          type="number"
+                                          value={tier.increasePercent}
+                                          onChange={(e) => {
+                                            const tiers = [...(draftRule.action.tiers || [{ maxBudget: 30, increasePercent: 50 }, { maxBudget: 999999, increasePercent: 30 }])];
+                                            tiers[i] = { ...tiers[i], increasePercent: parseInt(e.target.value) || 0 };
+                                            setDraftRule({ ...draftRule, action: { ...draftRule.action, tiers } });
+                                          }}
+                                          className="w-16 bg-white border border-emerald-200 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-emerald-500 outline-none"
+                                        />
+                                        <span className="text-slate-500 text-xs">%</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                  <p className="text-xs text-slate-400 mt-1">Tier cuối (không giới hạn) luôn dùng % cuối cùng</p>
+                                </div>
+                              )}
+
+                              {/* Boost Best Placement Config */}
+                              {draftRule.action.type === "boost_best_placement" && (
+                                <div>
+                                  <label className="text-xs font-medium text-slate-500 mb-1 block">% Boost cho placement tốt nhất</label>
+                                  <div className="flex items-center gap-2">
+                                    <input
+                                      type="number"
+                                      min={1}
+                                      max={900}
+                                      value={draftRule.action.boostPercent ?? 15}
+                                      onChange={(e) =>
+                                        setDraftRule({
+                                          ...draftRule,
+                                          action: { ...draftRule.action, boostPercent: parseInt(e.target.value) || 15 },
+                                        })
+                                      }
+                                      className="w-20 bg-white border border-emerald-200 rounded-lg px-3 py-2 text-sm font-medium text-emerald-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+                                    />
+                                    <span className="text-sm font-medium text-emerald-700">pts (cộng vào Placement %)</span>
+                                  </div>
+                                  <p className="text-xs text-slate-400 mt-1">Tự động chọn Placement có orders cao nhất trong Campaign</p>
                                 </div>
                               )}
 

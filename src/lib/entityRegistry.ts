@@ -26,6 +26,13 @@ export const ENTITY_REGISTRY: EntityDefinition[] = [
                 operations: ["increase", "decrease", "set"],
                 supportsPercentage: true,
             },
+            {
+                id: "tiered_budget",
+                label: "Budget (theo tầng)",
+                targetField: "Daily Budget",
+                operations: ["tiered_increase"],
+                supportsPercentage: false,
+            },
         ],
         filterFields: [
             { key: "Targeting Type", label: "Targeting Type", type: "select", options: ["Manual", "Auto"], group: "🔍 Entity Filters" },
@@ -49,6 +56,13 @@ export const ENTITY_REGISTRY: EntityDefinition[] = [
                 label: "Placement %",
                 targetField: "Percentage",
                 operations: ["increase", "decrease", "set"],
+                supportsPercentage: false,
+            },
+            {
+                id: "boost_best_placement",
+                label: "Boost placement tốt nhất",
+                targetField: "Percentage",
+                operations: ["boost_best_placement"],
                 supportsPercentage: false,
             },
         ],
@@ -217,6 +231,24 @@ export function getActionOptions(entityType: string): ActionOption[] {
 
     for (const action of entityDef.availableActions) {
         for (const op of action.operations) {
+            if (op === "tiered_increase") {
+                options.push({
+                    label: `📈 Tăng Budget (theo tầng)`,
+                    type: "tiered_increase" as any,
+                    targetField: action.targetField,
+                    needsValue: false,
+                });
+                continue;
+            }
+            if (op === "boost_best_placement") {
+                options.push({
+                    label: `🎯 Boost Placement tốt nhất`,
+                    type: "boost_best_placement" as any,
+                    targetField: action.targetField,
+                    needsValue: false,
+                });
+                continue;
+            }
             const opLabels: Record<string, string> = {
                 increase: `📈 Tăng ${action.label}`,
                 decrease: `📉 Giảm ${action.label}`,
@@ -271,6 +303,15 @@ export function migrateRuleAction(action: any): RuleAction {
 export function getActionDisplayText(action: RuleAction): string {
     if (action.type === "pause") return "⏸ Pause";
     if (action.type === "enable") return "▶ Enable";
+    if (action.type === "tiered_increase") {
+        const tiersStr = (action.tiers || [])
+            .map(t => `≤$${t.maxBudget}:+${t.increasePercent}%`)
+            .join(", ");
+        return `📈 Budget tiếp tầng (${tiersStr || "chưa cấu hình"})`;
+    }
+    if (action.type === "boost_best_placement") {
+        return `🎯 Boost best placement +${action.boostPercent ?? 15}%`;
+    }
 
     const opSymbols: Record<string, string> = { increase: "↑", decrease: "↓", set: "=" };
     const symbol = opSymbols[action.type] || "";

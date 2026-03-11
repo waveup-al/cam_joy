@@ -12,7 +12,7 @@ export interface ActionTemplate {
   id: string;
   label: string;
   targetField: string;
-  operations: ("increase" | "decrease" | "set")[];
+  operations: ("increase" | "decrease" | "set" | "tiered_increase" | "boost_best_placement")[];
   supportsPercentage: boolean;
 }
 
@@ -45,11 +45,18 @@ export interface RuleCondition {
   textValue?: string;
 }
 
+export interface BudgetTier {
+  maxBudget: number;  // nếu budget <= maxBudget thì dùng % này
+  increasePercent: number;
+}
+
 export interface RuleAction {
-  type: "increase" | "decrease" | "set" | "pause" | "enable";
+  type: "increase" | "decrease" | "set" | "pause" | "enable" | "tiered_increase" | "boost_best_placement";
   targetField: string;
   value?: number;
   unit?: "%" | "$";
+  tiers?: BudgetTier[];  // dùng cho tiered_increase
+  boostPercent?: number; // dùng cho boost_best_placement
 }
 
 export interface Rule {
@@ -66,6 +73,7 @@ export interface Project {
   name: string;
   description: string;
   rules: Rule[];
+  reportDays?: number; // số ngày của report (để tính avg daily spend)
 }
 
 // ===== DATA TYPES =====

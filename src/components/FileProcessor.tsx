@@ -71,6 +71,7 @@ export const FileProcessor: React.FC = () => {
   const [useCustomOwner, setUseCustomOwner] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cancelRef = useRef(false);
+  const [reportDays, setReportDays] = useState<number>(7);
 
   // Auto-detect owners from Portfolio Name column
   const detectedOwners = useMemo<DetectedOwner[]>(() => {
@@ -239,7 +240,35 @@ export const FileProcessor: React.FC = () => {
     "Units": ["Units", "Total Units"],
   };
 
+  // Derived metrics: computed from combinations of columns
+  const resolveDerivedMetric = (row: AmazonBulkRow, metric: string): number | null => {
+    const p = (v: string | undefined) => parseNumber(v);
+    switch (metric) {
+      case "Spend % of Budget": {
+        const budget = p(row["Daily Budget"]);
+        if (!budget) return null;
+        return (p(row["Spend"]) / budget) * 100;
+      }
+      case "Spend % of Budget (7d)": {
+        const budget = p(row["Daily Budget"]);
+        if (!budget) return null;
+        const spend7d = p(row["7 Day Total Spend"] || row["7d Spend"] || row["Spend"]);
+        return (spend7d / (budget * 7)) * 100;
+      }
+      case "Avg Daily Spend": {
+        const days = reportDays > 0 ? reportDays : 7;
+        return p(row["Spend"]) / days;
+      }
+      default:
+        return null;
+    }
+  };
+
   const resolveColumnValue = (row: AmazonBulkRow, metric: string): number => {
+    // 0. Check derived metrics first
+    const derived = resolveDerivedMetric(row, metric);
+    if (derived !== null) return derived;
+
     // 1. Try exact match from our map
     const candidates = METRIC_COLUMN_MAP[metric];
     if (candidates) {
@@ -321,6 +350,19 @@ export const FileProcessor: React.FC = () => {
     // Determine owner filter
     const ownerFilter = activeOwnerFilter && activeOwnerFilter !== "All" ? activeOwnerFilter.toLowerCase() : null;
 
+    // === PRE-PASS: Build placement orders map ===
+    // Map: campaignId -> { placement -> orders }
+    const placementOrdersMap = new Map<string, Record<string, number>>();
+    for (const row of rawData) {
+      if ((row.Entity || "").trim().toLowerCase() !== "bidding adjustment") continue;
+      const campId = row["Campaign ID"] || row["Campaign Name"] || "";
+      const placement = (row.Placement || "").trim();
+      const orders = parseNumber(row["Orders"] || row["7 Day Total Orders (#)"] || "0");
+      if (!campId || !placement) continue;
+      if (!placementOrdersMap.has(campId)) placementOrdersMap.set(campId, {});
+      placementOrdersMap.get(campId)![placement] = orders;
+    }
+
     const CHUNK_SIZE = 2000;
     const totalRows = rawData.length;
     const newData: AmazonBulkRow[] = new Array(totalRows);
@@ -397,7 +439,27 @@ export const FileProcessor: React.FC = () => {
               updatedRow.State = "enabled";
               changeNewValue = "enabled";
               appliedActionDesc = "▶ Enabled";
-            } else if (action.value !== undefined) {
+            } else if (action.type === "boost_best_placement") {
+              // Boost placement có orders cao nhất trong campaign
+              const campId = updatedRow["Campaign ID"] || updatedRow["Campaign Name"] || "";
+              const placementMap = placementOrdersMap.get(campId) || {};
+              const currentPlacement = (updatedRow.Placement || "").trim();
+              const bestPlacement = Object.entries(placementMap)
+                .sort(([, a], [, b]) => b - a)[0]?.[0];
+              if (bestPlacement && bestPlacement === currentPlacement) {
+                changeTargetField = "Percentage";
+                changeOldValue = updatedRow.Percentage || "0";
+                const currentPct = parseNumber(updatedRow.Percentage);
+                const boostPct = action.boostPercent ?? 15;
+                const newPct = Math.round(currentPct + boostPct);
+                updatedRow.Percentage = String(Math.min(900, newPct));
+                changeNewValue = updatedRow.Percentage;
+                appliedActionDesc = `🎯 Boost best placement +${boostPct}%`;
+              } else {
+                // Không phải best placement, skip
+                rowChanged = false;
+              }
+            } else if (action.type === "tiered_increase" || action.value !== undefined) {
               changeTargetField = targetField;
               const currentVal = parseNumber(updatedRow[targetField]);
               changeOldValue = updatedRow[targetField] || "0";
@@ -684,6 +746,20 @@ export const FileProcessor: React.FC = () => {
                     <option key={p.id} value={p.id}>{p.name} ({p.rules.length} rules)</option>
                   ))}
                 </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Report bao nhiêu ngày:</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min={1}
+                    max={90}
+                    value={reportDays}
+                    onChange={(e) => setReportDays(Math.max(1, parseInt(e.target.value) || 7))}
+                    className="w-20 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm font-medium text-slate-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  />
+                  <span className="text-xs text-slate-500">ngày (cho metric Avg Daily Spend)</span>
+                </div>
               </div>
               <p className="text-sm text-slate-600">
                 Run the rule engine against the uploaded data. This will evaluate{" "}
