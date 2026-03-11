@@ -29,10 +29,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
     <div className="w-64 bg-slate-900 text-slate-300 flex flex-col h-full border-r border-slate-800">
       <div className="p-6 flex items-center gap-3">
         <div className="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center text-white font-bold">
-          AC
+          JC
         </div>
         <span className="text-xl font-bold text-white tracking-tight">
-          AutoCamp
+          Joy camp
         </span>
       </div>
 

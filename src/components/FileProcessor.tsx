@@ -136,7 +136,7 @@ export const FileProcessor: React.FC = () => {
           if (results.data.length > 0) {
             const cols = Object.keys(results.data[0]);
             setDetectedColumns(cols);
-            console.log("[AutoCamp] Detected CSV columns:", cols);
+            console.log("[Joy camp] Detected CSV columns:", cols);
           }
           setRawData(results.data);
           setProcessedData([]);
@@ -187,8 +187,8 @@ export const FileProcessor: React.FC = () => {
           if (finalData.length > 0) {
             const cols = Object.keys(finalData[0]);
             setDetectedColumns(cols);
-            console.log("[AutoCamp] Detected Excel columns:", cols);
-            console.log("[AutoCamp] Sample row (first Keyword):", finalData.find(r => r.Entity === "Keyword"));
+            console.log("[Joy camp] Detected Excel columns:", cols);
+            console.log("[Joy camp] Sample row (first Keyword):", finalData.find(r => r.Entity === "Keyword"));
           }
           setRawData(finalData);
           setProcessedData([]);
@@ -551,7 +551,7 @@ export const FileProcessor: React.FC = () => {
       const ws = XLSX.utils.json_to_sheet(processedData);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "Sponsored Products Campaigns");
-      XLSX.writeFile(wb, `autocamp_processed_${new Date().getTime()}.xlsx`);
+      XLSX.writeFile(wb, `joycamp_processed_${new Date().getTime()}.xlsx`);
     } else {
       const csv = Papa.unparse(processedData, {
         delimiter: ";",
@@ -564,7 +564,7 @@ export const FileProcessor: React.FC = () => {
       link.setAttribute("href", url);
       link.setAttribute(
         "download",
-        `autocamp_processed_${new Date().getTime()}.csv`,
+        `joycamp_processed_${new Date().getTime()}.csv`,
       );
       link.style.visibility = "hidden";
       document.body.appendChild(link);
